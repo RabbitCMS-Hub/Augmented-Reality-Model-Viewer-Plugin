@@ -213,8 +213,9 @@ Class Augmented_Reality_Model_Viewer_Plugin
                     Else
                         Dim AR_BUTTON
                             AR_BUTTON = "<ar-button data-prod-id="""& PRODUCT_ID &""" src="""& FILE_GLB &""" ios-src="""& FILE_USDZ &""" show-if-unsupported link="""& PLUGIN_RUN_ALONE_URL(This) &"?VIEW_AR_MODAL=Run&LazyLoad=False&ProductID="& PRODUCT_ID &""" title="""& tmp_product_name &""">See in Augmented Reality</ar-button>"
+                        
                         '/* Add Hook To '*/
-                        PLUGIN_HOOK "product:image-bottom", AR_BUTTON
+                        PLUGIN_HOOK "product:image-bottom", Array(This, AR_BUTTON)
                     End If
                 End If
             End If
