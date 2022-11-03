@@ -1,0 +1,213 @@
+html,
+body {
+    padding: 0px;
+    margin: 0px;
+    font-family: Google Sans, Noto, Roboto, Helvetica Neue, sans-serif;
+    color: #244376;
+    /*background-color: rgb(159, 184, 173);*/
+}
+
+
+#card {
+    margin: 3em auto;
+    display: flex;
+    flex-direction: column;
+    max-width: 600px;
+    border-radius: 6px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+}
+
+model-viewer {
+    width: 100vw;
+    height: 100vh;
+    overflow-x: hidden;
+}
+model-viewer#model-viewer {
+    --poster-color: transparent;
+}
+
+.attribution {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    margin: 1em;
+}
+
+.attribution h1 {
+    margin: 0 0 0.25em;
+}
+
+.attribution img {
+    opacity: 0.5;
+    height: 2em;
+}
+
+.attribution .cc {
+    flex-shrink: 0;
+    text-decoration: none;
+}
+
+footer {
+    display: flex;
+    flex-direction: column;
+    max-width: 600px;
+    margin: auto;
+    text-align: center;
+    font-style: italic;
+    line-height: 1.5em;
+}
+
+.gizle {
+    display: none !important;
+}
+.ActiveButton {
+    background-color: blue;
+    border-radius: 4px;
+    border: none;
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    padding: 5px 10px;
+    color: #ffffff;
+    font-size: 14px;
+    z-index: 99999999;
+}
+
+.grid-container {
+    width: 100vw;
+    height: 100vh;
+    display: grid;
+    grid-gap: 0px;
+}
+#lazy-load-poster {
+    background-size: 400px !important;
+    background-repeat: no-repeat !important;
+    background-color: #030303 !important;
+    background-position: center center !important;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-image: url('../img/loading.gif');
+}
+  #button-load {
+    background-image: url("../img/ic_get_app_white_24dp.svg");
+    background-repeat: no-repeat;
+    background-size: 24px 24px;
+    background-position: 6% 50%;
+    background-color: rgb(255 11 11 / 40%);
+    color: white;
+    cursor: pointer;
+    border-radius: 6px;
+    display: inline-block;
+    padding: 10px 18px 9px 40px;
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: 0 0 8px rgba(0,0,0,.2), 0 0 4px rgba(0,0,0,.25);
+    position: absolute;
+    left: 50%;
+    top: 67%;
+    transform: translate3d(-50%, -50%, 0);
+    z-index: 100;
+  }
+.a {
+    grid-column: 1 / 1;
+    grid-row: 1 / 1;
+}
+
+.b {
+    grid-column: 5 / 9;
+    grid-row: 1 / 7;
+}
+
+.c {
+    grid-column: 9 / 13;
+    grid-row: 1 / 7;
+}
+
+@media (max-width: 880px) {
+    .a {
+        grid-column: 1 / 1;
+        grid-row: 1 / 7;
+    }
+
+    .b {
+        grid-column: 8 / 13;
+        grid-row: 1 / 4;
+    }
+
+    .c {
+        grid-column: 8 / 13;
+        grid-row: 4 / 7;
+    }
+}
+
+
+@media (max-width: 480px) {
+    .a {
+        grid-column: 1 / 1;
+        grid-row: 1 / 5;
+    }
+
+    .b {
+        grid-column: 1 / 7;
+        grid-row: 5 / 7;
+    }
+
+    .c {
+        grid-column: 7 / 13;
+        grid-row: 5 / 7;
+    }
+}
+  #error {
+    background-color: #ffffffdd;
+    border-radius: 16px;
+    padding: 16px;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate3d(-50%, -50%, 0);
+    transition: opacity 0.3s;
+  }
+  #error.hide {
+    opacity: 0;
+    visibility: hidden;
+    transition: visibility 2s, opacity 1s 1s;
+  }
+
+  .page-loader {
+    display: none;
+    position: absolute;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    transition: all 1s linear;
+}
+body.active .page-loader {
+    display: block;
+    transition: all 1s linear;
+}
+body.active #lazy-load-poster{
+    background: #8a2387 !important;
+    background: linear-gradient(320deg ,#f27121,#e94057,#8a2387) !important;
+    background-size: 100% !important;
+}
+.page-loader .percentage{
+    width: 100vw;
+    margin: 100px auto;
+    text-align: center;
+}
+.page-loader .percentage strong{
+    display: block;
+    font-size: 1.5rem;
+}
+.page-loader .percentage small{
+    display: block;
+    font-size: 1rem;
+}

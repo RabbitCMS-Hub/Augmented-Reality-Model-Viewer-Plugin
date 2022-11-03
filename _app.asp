@@ -23,7 +23,7 @@ Class Augmented_Reality_Model_Viewer_Plugin
     '---------------------------------------------------------------
     '*/
     Private PLUGIN_CODE, PLUGIN_DB_NAME, PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_CREDITS, PLUGIN_GIT, PLUGIN_DEV_URL, PLUGIN_FILES_ROOT, PLUGIN_ICON, PLUGIN_REMOVABLE, PLUGIN_ROOT, PLUGIN_FOLDER_NAME, PLUGIN_AUTOLOAD
-    Public FILE_USDZ, FILE_GLB, FILE_GLTF, FILE_PATH, PRODUCT_ID
+    Public FILE_USDZ, FILE_GLB, FILE_GLTF, FILE_PATH, PRODUCT_ID, SETTINGS_AR3D_MODULATION
     '/*
     '---------------------------------------------------------------
     ' REQUIRED: Register Class
@@ -47,14 +47,53 @@ Class Augmented_Reality_Model_Viewer_Plugin
         End If
         '/*
         '---------------------------------------------------------------
+        ' Plugin Database
+        '---------------------------------------------------------------
+        '*/
+        Dim PluginTableName
+            PluginTableName = "tbl_plugin_" & PLUGIN_DB_NAME
+        
+        If TableExist(PluginTableName) = False Then
+            DebugTimer ""& PLUGIN_CODE &" table creating"
+            
+            Conn.Execute("SET NAMES utf8mb4;") 
+            Conn.Execute("SET FOREIGN_KEY_CHECKS = 0;") 
+            
+            Conn.Execute("DROP TABLE IF EXISTS `"& PluginTableName &"`")
+
+            q="CREATE TABLE `"& PluginTableName &"` ( "
+            q=q+"  `ID` int(11) NOT NULL AUTO_INCREMENT, "
+            q=q+"  `URUN_ID` int(11) DEFAULT NULL, "
+            q=q+"  `FILE` varchar(255) DEFAULT NULL, "
+            q=q+"  `FILE_TYPE` varchar(5) DEFAULT NULL, "
+            q=q+"  `ORIGINAL_FILE_NAME` varchar(255) DEFAULT NULL, "
+            q=q+"  `YUKLEME_TARIHI` bigint(20) DEFAULT unix_timestamp(), "
+            q=q+"  `FILESIZES` bigint(30) DEFAULT 0, "
+            q=q+"  PRIMARY KEY (`ID`), "
+            q=q+"  KEY `IND1` (`URUN_ID`) "
+            q=q+"  ) ENGINE=MyISAM AUTO_INCREMENT=6 DEFAULT CHARSET=utf8; "
+            Conn.Execute(q)
+
+            Conn.Execute("SET FOREIGN_KEY_CHECKS = 1;") 
+
+            ' Create Log
+            '------------------------------
+            Call PanelLog(""& PLUGIN_CODE &" için database tablosu oluşturuldu", 0, ""& PLUGIN_CODE &"", 0)
+
+            ' Register Settings
+            '------------------------------
+            DebugTimer ""& PLUGIN_CODE &" class_register() End"
+        End If
+        '/*
+        '---------------------------------------------------------------
         ' Plugin Settings
         '---------------------------------------------------------------
         '*/
         a=GetSettings("PLUGIN:"& PLUGIN_CODE &"", PLUGIN_CODE&"_")
         a=GetSettings(""&PLUGIN_CODE&"_PLUGIN_NAME", PLUGIN_NAME)
-        a=GetSettings(""&PLUGIN_CODE&"_CLASS", "ClassName")
-        a=GetSettings(""&PLUGIN_CODE&"_REGISTERED", ""& Now() &"")
-        a=GetSettings(""&PLUGIN_CODE&"_CODENO", "0")
+        a=GetSettings(""&PLUGIN_CODE&"_CLASS", "Augmented_Reality_Model_Viewer_Plugin")
+        a=GetSettings(""&PLUGIN_CODE&"_REGISTERED", Now())
+        a=GetSettings(""&PLUGIN_CODE&"_CODENO", "1923")
         a=GetSettings(""&PLUGIN_CODE&"_FOLDER", PLUGIN_FOLDER_NAME)
         '/*
         '---------------------------------------------------------------
@@ -74,17 +113,6 @@ Class Augmented_Reality_Model_Viewer_Plugin
     '---------------------------------------------------------------
     '*/
     Public sub LoadPanel()
-        '/*
-        '--------------------------------------------------------
-        ' Sub Page
-        '--------------------------------------------------------
-        '*/
-        If Query.Data("Page") = "SHOW:CachedFiles" Then
-            Call PluginPage("Header")
-
-            Call PluginPage("Footer")
-            Call SystemTeardown("destroy")
-        End If
         '/*
         '--------------------------------------------------------
         ' Main Page
@@ -117,7 +145,7 @@ Class Augmented_Reality_Model_Viewer_Plugin
         ' REQUIRED: PluginTemplate Main Variables
         '-----------------------------------------------------------------------------------
         '*/
-        PLUGIN_CODE             = "ModalViewer"
+        PLUGIN_CODE             = "AR_MODALVIEWER"
         PLUGIN_NAME             = "Augmented Reality Model Viewer Plugin"
         PLUGIN_VERSION          = "1.0.0"
         PLUGIN_GIT              = "https://github.com/RabbitCMS-Hub/Augmented-Reality-Model-Viewer-Plugin"
@@ -125,7 +153,7 @@ Class Augmented_Reality_Model_Viewer_Plugin
         PLUGIN_ICON             = "zmdi-group"
         PLUGIN_CREDITS          = "@badursun Anthony Burak DURSUN"
         PLUGIN_FOLDER_NAME      = "Augmented-Reality-Model-Viewer-Plugin"
-        PLUGIN_DB_NAME          = ""
+        PLUGIN_DB_NAME          = "ar_products"
         PLUGIN_REMOVABLE        = True
         PLUGIN_AUTOLOAD         = True
         PLUGIN_ROOT             = PLUGIN_DIST_FOLDER_PATH(This)
@@ -135,19 +163,12 @@ Class Augmented_Reality_Model_Viewer_Plugin
         ' PluginTemplate Main Variables
         '-------------------------------------------------------------------------------------
         '*/
+        SETTINGS_AR3D_MODULATION= Cint( GetSettings(""&PLUGIN_CODE&"_ACTIVE", "0") )
         FILE_USDZ               = Null
         FILE_GLB                = Null
         FILE_GLTF               = Null
-        PRODUCT_ID              = Null
+        PRODUCT_ID              = IIf(Query.Data("ProductId")="", Null, Query.Data("ProductId"))
         FILE_PATH               = "/content/files/3dfiles/"
-        
-        a=GetSettings("PLUGIN:"& PLUGIN_CODE &"", PLUGIN_CODE&"_")
-        a=GetSettings(""&PLUGIN_CODE&"_PLUGIN_NAME", PLUGIN_NAME)
-        a=GetSettings(""&PLUGIN_CODE&"_CLASS", "Augmented_Reality_Model_Viewer_Plugin")
-        a=GetSettings(""&PLUGIN_CODE&"_FOLDER", PLUGIN_FOLDER_NAME)
-        a=GetSettings(""&PLUGIN_CODE&"_REGISTERED", Now())
-        a=GetSettings(""&PLUGIN_CODE&"_CODENO", "1923")
-        a=GetSettings(""&PLUGIN_CODE&"_ACTIVE", "1")
         '/*
         '-----------------------------------------------------------------------------------
         ' REQUIRED: Register Plugin to CMS
@@ -159,14 +180,43 @@ Class Augmented_Reality_Model_Viewer_Plugin
         ' REQUIRED: Hook Plugin to CMS Auto Load Location WEB|API|PANEL
         '-----------------------------------------------------------------------------------
         '*/
-        If PLUGIN_AUTOLOAD_AT("WEB") = True Then 
-            If Query.Data("ModelViewer") = "Run" Then
-                ' Set ModalViewer = New ModelViewerClass
-                    ProductID = Query.Data("ProductID")
-                    Create()
-                ' Set ModalViewer = Nothing
-
+        If PLUGIN_AUTOLOAD_AT("WEB") = True Then
+            '/* Model Viewer '*/
+            If Query.Data("VIEW_AR_MODAL") = "Run" Then
+                ProductID = Query.Data("ProductID")
+                CreateModule()
                 Call SystemTeardown("destroy")
+            End If
+
+            '/* Hook To '*/
+            If SETTINGS_AR3D_MODULATION=1 Then 
+                If ARPosible(PRODUCT_ID) = True Then
+                    '/* Add Button Style '*/
+                    PLUGIN_ADD_TO This, "JS", "dist/js/app.js"
+                    PLUGIN_ADD_TO This, "CSS", "dist/css/ar-viewer.css"
+
+                    FILE_GLB = Null
+                    FILE_USDZ= Null
+
+                    Set rs3DARFiles = Conn.Execute("SELECT `FILE`, `FILE_TYPE` FROM tbl_urun_3d WHERE URUN_ID="& PRODUCT_ID &"")
+                    Do while Not rs3DARFiles.Eof
+                        If rs3DARFiles("FILE_TYPE").Value = "GLB" Then
+                            FILE_GLB = "/content/files/3dfiles/" & rs3DARFiles("FILE").Value
+                        End If
+                        If rs3DARFiles("FILE_TYPE").Value = "USDZ" Then
+                            FILE_USDZ = "/content/files/3dfiles/" & rs3DARFiles("FILE").Value
+                        End If
+                    rs3DARFiles.MoveNext : Loop
+                    rs3DARFiles.Close : Set rs3DARFiles = Nothing
+
+                    If IsNull(FILE_GLB) AND IsNull(FILE_USDZ) Then
+                    Else
+                        Dim AR_BUTTON
+                            AR_BUTTON = "<ar-button data-prod-id="""& PRODUCT_ID &""" src="""& FILE_GLB &""" ios-src="""& FILE_USDZ &""" show-if-unsupported link="""& PLUGIN_RUN_ALONE_URL(This) &"?VIEW_AR_MODAL=Run&LazyLoad=False&ProductID="& PRODUCT_ID &""" title="""& tmp_product_name &""">See in Augmented Reality</ar-button>"
+                        '/* Add Hook To '*/
+                        PLUGIN_HOOK "product:image-bottom", AR_BUTTON
+                    End If
+                End If
             End If
             ' Cms.BodyData = Init()
             ' Cms.FooterData = "<add-footer-html>Hello World!</add-footer-html>"
@@ -230,7 +280,7 @@ Class Augmented_Reality_Model_Viewer_Plugin
 
         PRODUCT_ID = ProdID
 
-        Set rs3DARFiles = Conn.Execute("SELECT `FILE`, `FILE_TYPE` FROM tbl_urun_3d WHERE URUN_ID="& ProdID &"")
+        Set rs3DARFiles = Conn.Execute("SELECT `FILE`, `FILE_TYPE` FROM `"& PluginDBTable &"` WHERE `URUN_ID`="& ProdID &"")
         Do while Not rs3DARFiles.Eof
             If rs3DARFiles("FILE_TYPE").Value = "GLB" Then
                 FILE_GLB = FILE_PATH & rs3DARFiles("FILE").Value
@@ -274,49 +324,13 @@ Class Augmented_Reality_Model_Viewer_Plugin
     '
     '---------------------------------------------------------------
     '*/
-
-
-End Class 
-%>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<%
-'**********************************************
-'**********************************************
-'               _ _                 
-'      /\      | (_)                
-'     /  \   __| |_  __ _ _ __  ___ 
-'    / /\ \ / _` | |/ _` | '_ \/ __|
-'   / ____ \ (_| | | (_| | | | \__ \
-'  /_/    \_\__,_| |\__,_|_| |_|___/
-'               _/ | Digital Agency
-'              |__/ 
-' 
-'* Project  : RabbitCMS
-'* Developer: <Anthony Burak DURSUN>
-'* E-Mail   : badursun@adjans.com.tr
-'* Corp     : https://adjans.com.tr
-'**********************************************
-'**********************************************
-Class ModelViewerClass
-
-
+    '/*
     '---------------------------------------------------------------
     '
     '---------------------------------------------------------------
-    Public Sub Create()
-        If SETTINGS_AR3D_MODULATION=0 Then 
+    '*/
+    Public Sub CreateModule()
+        If SETTINGS_AR3D_MODULATION = 0 Then 
             Response.Write "Bu özellik kullanılamaz!"
             Exit Sub
         End If
@@ -339,24 +353,25 @@ Class ModelViewerClass
             Exit Sub
         End If
 
-        LazyLoad = LCase( Query.Data("LazyLoad") )
+        Dim LazyLoad
+            LazyLoad = LCase( Query.Data("LazyLoad") )
 
         With Response 
-            .Write "<!DOCTYPE html PUBLIC ""-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd"">"
+            .Write "<!DOCTYPE html PUBLIC ""-//W3C//DTD HTML 4.01//EN"" ""http://www.w3.org/TR/html4/strict.dtd"">"
             .Write "<html lang=""en-US"">"
             .Write "    <head profile=""http://www.w3.org/2005/10/profile"">"
             .Write "        <title>WebAR</title>"
             .Write "        <meta charset=""utf-8"" />"
             .Write "        <meta http-equiv=""X-UA-Compatible"" content=""IE=edge"" />"
             .Write "        <meta name=""viewport"" content=""width=device-width, height=device-height, initial-scale=1.0, user-scalable=no;user-scalable=0;"" />"
-            .Write "        <script src="""& PLUGIN_ROOT &"js/webcomponents-loader.js""></script>"
-            .Write "        <script src="""& PLUGIN_ROOT &"js/intersection-observer.js""></script>"
-            .Write "        <script src="""& PLUGIN_ROOT &"js/ResizeObserver.js""></script>"
-            .Write "        <script src="""& PLUGIN_ROOT &"js/fullscreen.polyfill.js""></script>"
+            .Write "        <script src="""& PLUGIN_ROOT &"dist/js/webcomponents-loader.js""></script>"
+            .Write "        <script src="""& PLUGIN_ROOT &"dist/js/intersection-observer.js""></script>"
+            .Write "        <script src="""& PLUGIN_ROOT &"dist/js/ResizeObserver.js""></script>"
+            .Write "        <script src="""& PLUGIN_ROOT &"dist/js/fullscreen.polyfill.js""></script>"
             ' .Write "        script src="""& PLUGIN_ROOT &"js/prismatic.min.js""></script>"
-            .Write "        <link rel=""prefetch"" href="""& PLUGIN_ROOT &"img/loading.svg"" />"
-            .Write "        <link rel=""prefetch"" href="""& PLUGIN_ROOT &"img/loading.gif"" />"
-            .Write "        <link rel=""stylesheet"" href="""& PLUGIN_ROOT &"css/style.css"" />"
+            .Write "        <link rel=""prefetch"" href="""& PLUGIN_ROOT &"dist/img/loading.svg"" />"
+            .Write "        <link rel=""prefetch"" href="""& PLUGIN_ROOT &"dist/img/loading.gif"" />"
+            .Write "        <link rel=""stylesheet"" href="""& PLUGIN_ROOT &"dist/css/style.css"" />"
             .Write "        <link rel=""stylesheet"" href=""https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"" />"
             .Write "    </head>"
             .Write "    <body>"
@@ -364,17 +379,17 @@ Class ModelViewerClass
             .Write "            <div class=""percentage""><strong>Model Loading</strong><small>0%</small></div>"
             .Write "        </div>"
             .Write "        <div class=""grid-container"">"
-            .Write "            <model-viewer id=""model-viewer"" class=""a""" &_
-                                IIf(LazyLoad="false", "", "loading=""eager"" reveal=""interaction"" ") &_
-                                "src="""& FILE_GLB &""" " &_
-                                "ios-src="""& FILE_USDZ &""" " &_
-                                "ar-modes=""webxr scene-viewer quick-look"" " &_
-                                "quick-look-browsers=""safari chrome"" " &_
-                                "alt=""RabbitCMS Model-Viewer"" " &_
-                                "shadow-intensity=""1"" " &_
-                                "camera-controls " &_
-                                "ar auto-rotate " &_
-                                ">"
+            .Write "            <model-viewer id=""model-viewer"" class=""a"""
+            .Write                  IIf(LazyLoad="false", "", "loading=""eager"" reveal=""interaction"" ")
+            .Write "                src="""& FILE_GLB &""" "
+            .Write "                ios-src="""& FILE_USDZ &""" " 
+            .Write "                ar-modes=""webxr scene-viewer quick-look"" " 
+            .Write "                quick-look-browsers=""safari chrome"" " 
+            .Write "                alt=""RabbitCMS Model-Viewer"" " 
+            .Write "                shadow-intensity=""1"" " 
+            .Write "                camera-controls " 
+            .Write "                ar auto-rotate " 
+            .Write "            >"
             .Write "                <div id=""lazy-load-poster"" slot=""poster""></div>"
             .Write "                <div id=""error"" class=""hide"">AR Özelliği Cihazda Desteklenmiyor</div>"
             .Write "                <div id=""button-load"" slot=""poster"">Modeli Yükle</div>"
@@ -384,8 +399,8 @@ Class ModelViewerClass
             .Write "            </model-viewer>"
             .Write "        </div>"
             .Write "        <script>let PLUGIN_ROOT='"& PLUGIN_ROOT &"';</script>"
-            .Write "        <script src="""& PLUGIN_ROOT &"js/jquery.min.js""></script>"
-            .Write "        <script src="""& PLUGIN_ROOT &"js/modelviewer.js""></script>"
+            .Write "        <script src="""& PLUGIN_ROOT &"dist/js/jquery.min.js""></script>"
+            .Write "        <script src="""& PLUGIN_ROOT &"dist/js/modelviewer.js""></script>"
             ' .Write "      <script type=""module"" src=""https://unpkg.com/@google/model-viewer/dist/model-viewer.js""></script>"
             .Write "        <script type=""module"" src=""https://unpkg.com/@google/model-viewer@v0.3.1/dist/model-viewer.js""></script>"
             ' .Write "        <script nomodule src=""https://unpkg.com/@google/model-viewer/dist/model-viewer-legacy.js""></script>"
@@ -394,8 +409,37 @@ Class ModelViewerClass
             .Write "</html>"
         End With
     End Sub
+    '/*
     '---------------------------------------------------------------
     '
     '---------------------------------------------------------------
+    '*/
+    '/*
+    '---------------------------------------------------------------
+    '
+    '---------------------------------------------------------------
+    '*/
+    Public Function ARPosible(ProductID)
+        DebugApp "ARPosible("& ProductID &")<br>", ""
+
+        If IsNumericalAndNotZero(ProductID) = False Then
+            ARPosible = False
+            Exit Function
+        End If
+
+        ARPosible = False
+
+        Dim rsPosible
+        Set rsPosible = Conn.Execute("SELECT IF( ( (SELECT COUNT(DISTINCT FILE_TYPE) FROM `"& PluginDBTable &"` WHERE URUN_ID="& ProductID &" AND FILE_TYPE = 'USDZ' GROUP BY FILE_TYPE) + (SELECT COUNT(DISTINCT FILE_TYPE) FROM `"& PluginDBTable &"` WHERE URUN_ID="& ProductID &" AND FILE_TYPE = 'GLB' GROUP BY FILE_TYPE) )=2, 1,0 ) AS RESULT")
+        If Not rsPosible.Eof Then 
+            ARPosible = IIf( rsPosible("RESULT").Value=0, False, True)
+        End If
+        rsPosible.Close : Set rsPosible = Nothing
+    End Function
+    '/*
+    '---------------------------------------------------------------
+    '
+    '---------------------------------------------------------------
+    '*/
 End Class 
 %>
