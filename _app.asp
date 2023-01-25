@@ -67,7 +67,7 @@ Class Augmented_Reality_Model_Viewer_Plugin
             q=q+"  `FILE` varchar(255) DEFAULT NULL, "
             q=q+"  `FILE_TYPE` varchar(5) DEFAULT NULL, "
             q=q+"  `ORIGINAL_FILE_NAME` varchar(255) DEFAULT NULL, "
-            q=q+"  `YUKLEME_TARIHI` bigint(20) DEFAULT unix_timestamp(), "
+            q=q+"  `YUKLEME_TARIHI` datetime DEFAULT current_timestamp(), "
             q=q+"  `FILESIZES` bigint(30) DEFAULT 0, "
             q=q+"  PRIMARY KEY (`ID`), "
             q=q+"  KEY `IND1` (`URUN_ID`) "
@@ -433,7 +433,7 @@ Class Augmented_Reality_Model_Viewer_Plugin
         Dim rsPosible
         Set rsPosible = Conn.Execute("SELECT IF( ( (SELECT COUNT(DISTINCT FILE_TYPE) FROM `"& PluginDBTable &"` WHERE URUN_ID="& ProductID &" AND FILE_TYPE = 'USDZ' GROUP BY FILE_TYPE) + (SELECT COUNT(DISTINCT FILE_TYPE) FROM `"& PluginDBTable &"` WHERE URUN_ID="& ProductID &" AND FILE_TYPE = 'GLB' GROUP BY FILE_TYPE) )=2, 1,0 ) AS RESULT")
         If Not rsPosible.Eof Then 
-            ARPosible = IIf( rsPosible("RESULT").Value=0, False, True)
+            ARPosible = IIf( Cint(rsPosible("RESULT"))=0, False, True)
         End If
         rsPosible.Close : Set rsPosible = Nothing
     End Function
